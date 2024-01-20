@@ -17,17 +17,18 @@ This project is the implementation of a graduation design focused on developing 
 
 ```
 |-- data/            # Store image and text datasets
-|-- src/             # Store source code
+|-- client/          # Store frontend code
+|-- server/          # Store backend code
 |-- docs/            # Store documents
 |-- README.md        # Project documentation
 |-- LICENSE          # Project license
 ```
 
-## Usage
+## Progress Rate
 
-```plaintext
-on updating
-```
+- create backend framework with django
+- create frontend framework with vue.js
+- on updating ...
 
 ## Acknowledgements
 
