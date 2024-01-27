@@ -19,6 +19,7 @@ This project is the implementation of a graduation design focused on developing 
 |-- data/            # Store image and text datasets
 |-- client/          # Store frontend code
 |-- server/          # Store backend code
+|-- demo/            # Store web demo for easy retrieval
 |-- docs/            # Store documents
 |-- README.md        # Project documentation
 |-- LICENSE          # Project license
@@ -28,6 +29,7 @@ This project is the implementation of a graduation design focused on developing 
 
 - create backend framework with django
 - create frontend framework with vue.js
+- complete web demo: [introduce](/demo/README.md)
 - on updating ...
 
 ## Acknowledgements
