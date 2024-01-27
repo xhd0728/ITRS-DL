@@ -85,7 +85,7 @@ class HfVisionModel:
 
     def _warmup(self):
         input = self.processor(images=Image.open(
-            './assets/demo.png'), return_tensors='pt', padding=True).to(self.device)
+            './assets/heu.jpg'), return_tensors='pt', padding=True).to(self.device)
         self.model.eval()
         with torch.no_grad():
             self.model(**input)

@@ -75,7 +75,7 @@ def build_coco_dataset(is_train=False):
     for idx, (img_id, captions) in enumerate(imgid_to_captions.items()):
         img_info = {
             'id': img_id,
-            'file_name': f'COCO_val2014_{img_id:012d}.jpg'  # COCO图像文件名的格式
+            'file_name': f'COCO_val2014_{img_id:012d}.jpg'
         }
         img_path = os.path.join(img_folder, img_info['file_name'])
 

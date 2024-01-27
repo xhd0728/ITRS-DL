@@ -17,6 +17,11 @@ from metric import compute_mrr, NDCG, MRR, mAP
 from PIL import Image
 from pymilvus import MilvusClient, connections, FieldSchema, CollectionSchema, DataType, Collection, utility
 
+# disable warning
+import warnings
+
+warnings.filterwarnings("ignore")
+
 
 # 所有图像的标签和类别
 labels, cates = get_labels_and_cates(
@@ -32,8 +37,8 @@ def id2image(img_id):
 
     # 针对每个数据集做不同的处理
     # 根据image_id找到对应的图像文件
-    root_dir = './MSCOCO/'
-    val_data = pd.read_csv('coco2014_val.csv')
+    root_dir = config.dataset.coco_path
+    val_data = pd.read_csv(os.path.join(root_dir, 'coco2014_val.csv'))
 
     # 如果img_id不在数据集的标签文件中，则是用户自己上传的
     if img_id >= len(val_data['filename']):
@@ -200,7 +205,6 @@ class QueryService:
 
 def text2image_gr(model_query, model_name=config.gradio.checkpoint_dir):
     clip = model_name
-    # blip2 = 'blip2-2.7b'
 
     title = "<h1 align='center'>ITRS_DL</h1>"
     description = "<h3 align='center'>基于深度学习的图文检索系统</h3>"

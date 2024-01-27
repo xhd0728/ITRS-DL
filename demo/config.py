@@ -67,10 +67,10 @@ class DatasetConfig:
         self.name = 'coco'
 
         # 数据集路径
-        self.mini_imagenet_path = '/root/Workspace/dataset/mini-imagenet'
-        self.flickr30k_path = '/root/Workspace/dataset/flickr30k'
-        self.coco_path = '/root/Workspace/dataset/MSCOCO'
-        self.coco2017_path = '/root/Workspace/dataset/mscoco2017'
+        self.mini_imagenet_path = '/mnt/f/DLWorks/dataset/mini-imagenet'
+        self.flickr30k_path = '/mnt/f/DLWorks/dataset/flickr30k'
+        self.coco_path = '/mnt/f/DLWorks/dataset/mscoco2014'
+        self.coco2017_path = '/mnt/f/DLWorks/dataset/mscoco2017'
 
 
 class Config:
