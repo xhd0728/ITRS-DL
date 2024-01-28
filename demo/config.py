@@ -6,7 +6,7 @@ class MilvusConfig:
     def __init__(self):
         self.host = '127.0.0.1'
         self.port = '19530'
-        self.collection_name = 'large_patch14_add_coco2014'
+        self.collection_name = 'large_patch14_train_coco2014'
         self.vector_dim = 768
         self.topk = 10
 
@@ -71,6 +71,9 @@ class DatasetConfig:
         self.flickr30k_path = '/mnt/f/DLWorks/dataset/flickr30k'
         self.coco_path = '/mnt/f/DLWorks/dataset/mscoco2014'
         self.coco2017_path = '/mnt/f/DLWorks/dataset/mscoco2017'
+
+        # 数据集划分
+        self.is_train = True
 
 
 class Config:

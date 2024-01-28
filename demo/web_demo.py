@@ -25,7 +25,9 @@ warnings.filterwarnings("ignore")
 
 # 所有图像的标签和类别
 labels, cates = get_labels_and_cates(
-    dataset=config.dataset.name, is_train=False)
+    dataset=config.dataset.name,
+    is_train=config.dataset.is_train
+)
 label2cate = {label: cate for label, cate in zip(labels, cates)}
 cate2label = {str(cate): label for label, cate in zip(labels, cates)}
 # 外部字典存储图像的id与image base64
@@ -38,7 +40,7 @@ def id2image(img_id):
     # 针对每个数据集做不同的处理
     # 根据image_id找到对应的图像文件
     root_dir = config.dataset.coco_path
-    val_data = pd.read_csv(os.path.join(root_dir, 'coco2014_val.csv'))
+    val_data = pd.read_csv(os.path.join(root_dir, 'coco2014_train.csv'))
 
     # 如果img_id不在数据集的标签文件中，则是用户自己上传的
     if img_id >= len(val_data['filename']):
@@ -47,7 +49,7 @@ def id2image(img_id):
             base64.b64decode(img_base64))).convert("RGB")
     else:
         img_path = os.path.join(
-            root_dir, 'val2014', val_data['filename'][img_id])
+            root_dir, 'train2014', val_data['filename'][img_id])
         img = Image.open(img_path)
     return img
 

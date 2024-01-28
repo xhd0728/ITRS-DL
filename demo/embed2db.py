@@ -58,7 +58,7 @@ if __name__ == '__main__':
     processor = AutoProcessor.from_pretrained(checkpoint_dir)
 
     dataset = ImageCaptionDataset(
-        is_train=False, return_loss=False, dataset=config.dataset.name)
+        is_train=config.dataset.is_train, return_loss=False, dataset=config.dataset.name)
 
     dataloader = DataLoader(
         dataset,
