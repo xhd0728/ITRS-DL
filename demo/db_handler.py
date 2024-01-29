@@ -1,7 +1,7 @@
 import pickle
 import redis
 from config import config
-from pymilvus import MilvusClient, connections, FieldSchema, CollectionSchema, DataType, Collection, utility
+from pymilvus import connections, FieldSchema, CollectionSchema, DataType, Collection, utility
 from log_handler import Logger
 
 logger = Logger.get_logger()
@@ -89,19 +89,23 @@ class MilvusHandler:
 
 
 class RedisHandler:
-    def __init__(self,
-                 host=config.redis.host,
-                 port=config.redis.port,
-                 db=config.redis.db
-                 ):
+    def __init__(
+        self,
+        host=config.redis.host,
+        port=config.redis.port,
+        db=config.redis.db
+    ):
 
         self.redis_client = redis.StrictRedis(host=host, port=port, db=db)
 
-    def set(self, key, value, ex=config.redis.expire_time):
+    def set_serialized(self, key, value, ex=config.redis.expire_time):
         serialized_value = pickle.dumps(value)
         self.redis_client.set(key, serialized_value, ex)
 
-    def get_data(self, key):
+    def set(self, key, value, ex=config.redis.expire_time):
+        self.redis_client.set(key, value, ex)
+
+    def get(self, key):
         result = self.redis_client.get(key)
         if result:
             return pickle.loads(result)
@@ -117,36 +121,12 @@ class RedisHandler:
                 deserialize_res.append(None)
         return deserialize_res
 
-    def update_data(self, key, new_value):
+    def update_serialized(self, key, new_value):
         serialized_value = pickle.dumps(new_value)
         self.redis_client.set(key, serialized_value)
 
+    def update_data(self, key, new_value):
+        self.redis_client.set(key, new_value)
+
     def delete_data(self, key):
         self.redis_client.delete(key)
-
-
-if __name__ == "__main__":
-
-    redis_handler = RedisHandler()
-
-    key = "example_key"
-    value = "example_value"
-
-    redis_handler.set(key, value)
-    logger.info(f"adding data: {key} -> {value}")
-
-    result = redis_handler.get_data(key)
-    logger.info(f"retrieve data: {key} -> {result}")
-
-    new_value = "updated_value"
-    redis_handler.update_data(key, new_value)
-    logger.info(f"update data: {key} -> {new_value}")
-
-    result = redis_handler.get_data(key)
-    logger.info(f"retrieve data: {key} -> {result}")
-
-    redis_handler.delete_data(key)
-    logger.info(f"delete data: {key}")
-
-    result = redis_handler.get_data(key)
-    logger.info(f"retrieve data: {key} -> {result}")

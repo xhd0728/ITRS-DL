@@ -1,20 +1,14 @@
-import os
-import json
-import yaml
-
 import torch
-import pandas as pd
 import numpy as np
 
 from config import config
 from image_caption_dataset import ImageCaptionDataset
 from db_handler import MilvusHandler
 
-from PIL import Image
 from tqdm import tqdm
-from torch.utils.data import DataLoader, Dataset
-from pymilvus import MilvusClient, connections, FieldSchema, CollectionSchema, DataType, Collection, utility, db
-from transformers import AutoModel, AutoProcessor, CLIPVisionModelWithProjection, CLIPTextModelWithProjection, CLIPModel
+from torch.utils.data import DataLoader
+from pymilvus import connections, FieldSchema, CollectionSchema, DataType, Collection, utility
+from transformers import AutoProcessor, CLIPVisionModelWithProjection, CLIPTextModelWithProjection, CLIPModel
 
 from log_handler import Logger
 

@@ -52,7 +52,6 @@ class HfTextModel:
     def _empty_cache(self):
         torch.cuda.empty_cache()
 
-    # 重新加载模型和预处理器
     def _reload(self, model_name):
         self._empty_cache()
         self.model_name = model_name
@@ -64,7 +63,7 @@ class HfTextModel:
         self.model.eval()
         with torch.no_grad():
             output = self.model(**text_token)
-        # 文本embeds向量归一化
+
         output.text_embeds /= output.text_embeds.norm(dim=-1, keepdim=True)
         text_embeds = output.text_embeds.cpu().numpy()
         return text_embeds
@@ -83,18 +82,23 @@ class HfVisionModel:
         processor = AutoProcessor.from_pretrained(model_name)
         return model, processor
 
+    # def _warmup(self):
+    #     input = self.processor(images=Image.open(
+    #         './assets/heu.jpg'), return_tensors='pt', padding=True).to(self.device)
+    #     self.model.eval()
+    #     with torch.no_grad():
+    #         self.model(**input)
+
     def _warmup(self):
-        input = self.processor(images=Image.open(
-            './assets/heu.jpg'), return_tensors='pt', padding=True).to(self.device)
+        input = torch.randn(1, 3, 224, 224).to(self.device)
         self.model.eval()
         with torch.no_grad():
-            self.model(**input)
+            self.model(input)
 
     @classmethod
     def _empty_cache(self):
         torch.cuda.empty_cache()
 
-    # 重新加载模型和预处理器
     def _reload(self, model_name):
         self._empty_cache()
         self.model_name = model_name
@@ -106,7 +110,7 @@ class HfVisionModel:
         self.model.eval()
         with torch.no_grad():
             output = self.model(**image_token)
-        # 文本embeds向量归一化
+
         output.image_embeds /= output.image_embeds.norm(dim=-1, keepdim=True)
         image_embeds = output.image_embeds.cpu().numpy()
         return image_embeds

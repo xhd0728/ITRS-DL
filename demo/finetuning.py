@@ -2,33 +2,22 @@
 
 from log_handler import Logger
 import os
-import json
-import yaml
-import requests
-
-import cv2
-import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
 
 import torch
-import torch.nn as nn
-import torch.optim as optim
 
 from config import config
 from image_caption_dataset import ImageCaptionDataset
-from torch.optim import Adam, SGD, AdamW
-from torch.utils.data import Dataset, DataLoader, Subset, Sampler, SubsetRandomSampler
-from torch.nn import CrossEntropyLoss, NLLLoss
+from torch.optim import Adam
+from torch.utils.data import DataLoader, Sampler
 
-from PIL import Image
-from transformers import AutoProcessor, CLIPModel, AutoModel
-from transformers import Trainer, TrainingArguments
+from transformers import CLIPModel, AutoModel
 
 from datetime import timedelta
 from accelerate import Accelerator
 from accelerate.utils import InitProcessGroupKwargs
 from tqdm import tqdm
+from collections import defaultdict
 
 import warnings
 
@@ -42,10 +31,10 @@ class DifferentClassSampler(Sampler):
     def __init__(self, dataset):
         super().__init__(dataset)
         self.dataset = dataset
-        class_indices = {}
+        class_indices = defaultdict(list)
         for i, (_, _, _, caption) in enumerate(dataset):
-            if caption not in class_indices:
-                class_indices[caption] = []
+            # if caption not in class_indices:
+            #     class_indices[caption] = []
             class_indices[caption].append(i)
         self.class_indices = class_indices
 

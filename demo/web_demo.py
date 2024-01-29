@@ -1,6 +1,6 @@
+import warnings
 import os
 import io
-import json
 import pickle
 import base64
 
@@ -12,37 +12,31 @@ from config import config
 from model import OnnxTextModel, HfTextModel, HfVisionModel
 from image_caption_dataset import get_labels_and_cates
 from db_handler import MilvusHandler, RedisHandler
-from metric import compute_mrr, NDCG, MRR, mAP
+from metric import NDCG, MRR, mAP
 
 from PIL import Image
-from pymilvus import MilvusClient, connections, FieldSchema, CollectionSchema, DataType, Collection, utility
+from log_handler import Logger
+logger = Logger.get_logger()
 
-# disable warning
-import warnings
 
 warnings.filterwarnings("ignore")
 
 
-# 所有图像的标签和类别
 labels, cates = get_labels_and_cates(
     dataset=config.dataset.name,
     is_train=config.dataset.is_train
 )
 label2cate = {label: cate for label, cate in zip(labels, cates)}
 cate2label = {str(cate): label for label, cate in zip(labels, cates)}
-# 外部字典存储图像的id与image base64
+
 extraPairDict = {}
 
 
-# 图像id到图像文件的映射函数
-def id2image(img_id):
+def id2image(img_id: int) -> Image.Image:
 
-    # 针对每个数据集做不同的处理
-    # 根据image_id找到对应的图像文件
     root_dir = config.dataset.coco_path
     val_data = pd.read_csv(os.path.join(root_dir, 'coco2014_train.csv'))
 
-    # 如果img_id不在数据集的标签文件中，则是用户自己上传的
     if img_id >= len(val_data['filename']):
         img_base64 = extraPairDict[str(img_id)]
         img = Image.open(io.BytesIO(
@@ -69,31 +63,34 @@ class QueryService:
         self.vision_model = HfVisionModel(model_name)
 
     def __call__(self, query_text, topk, model_name):
-        ids, distances, categories = self._search_categories(query_text, topk)
-        images = list(map(id2image, ids))
-        # captions = list(map(lambda x: labels[x], categories))  # 根据类别数字找到对应的描述
-        captions = list(map(lambda x: cate2label[str(x)], categories))
+        try:
+            ids, _, categories = self._search_categories(query_text, topk)
+
+            images = list(map(id2image, ids))
+
+            captions = list(map(lambda x: cate2label[str(x)], categories))
+        except Exception as e:
+            logger.error(f'redis error: {e}')
+            return self.__call__(query_text, topk, model_name)
         return list(zip(images, captions))
 
-    # 根据 单个文本向量搜索topk个结果
     def _search_categories(self, query_text, topk):
         if self.use_redis:
-            # 如果查询文本是单个字符串
+
             if isinstance(query_text, str):
                 search_res = self.redis_handler.get(query_text)
-            # 如果查询文本是字符串列表
+
             elif isinstance(query_text, list):
                 search_res = self.redis_handler.redis_client.mget(query_text)
             else:
                 return NotImplementedError
 
-            # 如果没在redis中找到结果
-            if search_res is None or None in search_res:  # TODO:待优化
+            if search_res is None or None in search_res:
                 ids, distances, categories = self._embed_and_search(
                     query_text, topk)
 
                 res_pack = list(zip(ids, distances, categories))
-                # 如果查询文本是单个字符串则转为列表，方便统一处理
+
                 if isinstance(query_text, str):
                     query_text = [query_text]
                 for text, pack in zip(query_text, res_pack):
@@ -111,7 +108,7 @@ class QueryService:
                     deserialize_res = self.redis_handler.mget(query_text)
                     ids, distances, categories = tuple(zip(*deserialize_res))
                     return ids, distances, categories
-        # 如果不使用redis
+
         else:
             ids, distances, categories = self._embed_and_search(
                 query_text, topk)
@@ -127,16 +124,13 @@ class QueryService:
         return ids, distances, categories
 
     def _PIL2Base64(self, image):
-        # 创建一个BytesIO对象，用于临时存储图像数据
+
         image_data = io.BytesIO()
 
-        # 将图像保存到BytesIO对象中，格式为JPEG
         image.save(image_data, format='JPEG')
 
-        # 将BytesIO对象的内容转换为字节串
         image_data_bytes = image_data.getvalue()
 
-        # 将图像数据编码为Base64字符串
         encoded_image = base64.b64encode(image_data_bytes).decode('utf-8')
         return encoded_image
 
@@ -144,25 +138,23 @@ class QueryService:
         image_embeds = self.vision_model(images=upload_image)
         text_embeds = self.text_model(text=label)
         ids = [self.milvus_handler.collection.num_entities + 1]
-        # 如果label不在字典中
+
         if label2cate.get(label) is None:
             labels.append(label)
             label2cate[label] = max(cates) + 1
             cates.append(label2cate[label])
             cate2label[str(label2cate[label])] = label
             categories = [label2cate[label]]
-            # 插入到id到image base64的字典
+
             extraPairDict[str(
                 self.milvus_handler.collection.num_entities + 1)] = self._PIL2Base64(upload_image)
         else:
             categories = [label2cate[label]]
-        # ids对应的主键序号列表， categories类别对应的数字列表
-        # 插入的数据可以是list[dict] or list[list]
+
         insert_datas = [ids, (image_embeds + text_embeds) / 2, categories]
         self.milvus_handler.insert(data=insert_datas)
-        return '已上传至图库中'
+        return 'success'
 
-    # 计算相关指标
     def compute_metrics(self, query_text=labels):
         from sklearn.metrics import recall_score
         recalls = []
@@ -175,7 +167,7 @@ class QueryService:
             query_text, max(topk_list))
 
         for k in topk_list:
-            # targets = np.array([i for i in range(100)])
+
             targets = np.array(cates)
             categories_k = np.array(categories)[:, :k]
 
@@ -184,17 +176,17 @@ class QueryService:
 
             recall = recall_score(
                 targets_repeat, categories_flat, average='micro')
-            # mrr = compute_mrr(targets, categories)
+
             mrr = MRR(categories_k, targets)
             ndcg = NDCG(categories_k, targets)
             m_ap = mAP(categories_k, targets)
 
             recalls.append(round(100 * recall, 4))
-            # mrrs.append(round(100 * mrr, 4))
+
             mrrs.append(round(100 * mrr, 4))
             ndcgs.append(round(100 * ndcg, 4))
             maps.append(round(100 * m_ap, 4))
-        # return recalls, mrrs, ndcgs, maps
+
         return f"""
                 |            | **Recall (%)** | **MRR (%)** | **NDCG (%)** | **mAP (%)** |
                 |:----------:|:--------------:|:-----------:|:------------:|:-----------:|
@@ -224,7 +216,6 @@ def text2image_gr(model_query, model_name=config.gradio.checkpoint_dir):
                     query_text = gr.Textbox(
                         value="dog", label="input to search...", elem_id=0, interactive=True)
 
-                # 注意topk < search_param的ef
                 topk = gr.components.Slider(
                     minimum=1,
                     maximum=20,

@@ -20,10 +20,9 @@ def get_labels_and_cates(dataset, is_train):
     cates = [item[1] for item in array]
 
     labels = [item[3] for item in array]
-    # 如果是二维数组则一个图像对应多个描述
+
     if isinstance(labels, list) and all(isinstance(sub_list, list) for sub_list in labels):
         len_list = list(map(lambda x: len(x), labels))
-        # 将二维数组展平，让tokenizer处理batch个labels时,input_ids与attn_masks长度相同
         labels = [item for sub_list in labels for item in sub_list]
         cates = [item for item, count in zip(
             cates, len_list) for _ in range(count)]
@@ -50,26 +49,23 @@ def build_mini_imagenet_dataset(is_train=False):
 
 
 def build_coco_dataset(is_train=False):
-    # 设置数据集路径
+
     dataDir = config.dataset.coco_path
-    dataType = 'train2014' if is_train else 'val2014'  # 或者 'val2014'，取决于您想要加载的数据集部分
+    dataType = 'train2014' if is_train else 'val2014'
     annFile = os.path.join(dataDir, f'annotations/captions_{dataType}.json')
 
-    # 加载注释文件
     with open(annFile, 'r') as f:
         annotations = json.load(f)['annotations']
 
-    # 构建图像ID到描述的映射
     imgid_to_captions = {}
     for ann in annotations:
         img_id = ann['image_id']
         caption = ann['caption']
         if img_id in imgid_to_captions:
-            imgid_to_captions[img_id].append(caption)  # 对应多条描述
+            imgid_to_captions[img_id].append(caption)
         else:
             imgid_to_captions[img_id] = [caption]
 
-    # 加载图像和对应的描述
     res = []
     img_folder = os.path.join(dataDir, dataType)
     for idx, (img_id, captions) in enumerate(imgid_to_captions.items()):
@@ -85,32 +81,29 @@ def build_coco_dataset(is_train=False):
 
 
 def build_coco2017_dataset(is_train=False):
-    # 设置数据集路径
+
     dataDir = config.dataset.coco2017_path
     dataType = 'train2017' if is_train else 'val2017'
     annFile = os.path.join(dataDir, f'annotations/captions_{dataType}.json')
 
-    # 加载注释文件
     with open(annFile, 'r') as f:
         annotations = json.load(f)['annotations']
 
-    # 构建图像ID到描述的映射
     imgid_to_captions = {}
     for ann in annotations:
         img_id = ann['image_id']
         caption = ann['caption']
         if img_id in imgid_to_captions:
-            imgid_to_captions[img_id].append(caption)  # 对应多条描述
+            imgid_to_captions[img_id].append(caption)
         else:
             imgid_to_captions[img_id] = [caption]
 
-    # 加载图像和对应的描述
     res = []
     img_folder = os.path.join(dataDir, dataType)
     for idx, (img_id, captions) in enumerate(imgid_to_captions.items()):
         img_info = {
             'id': img_id,
-            'file_name': f'{img_id:012d}.jpg'  # COCO图像文件名的格式
+            'file_name': f'{img_id:012d}.jpg'
         }
         img_path = os.path.join(img_folder, img_info['file_name'])
 
@@ -126,7 +119,6 @@ def build_flickr30k_dataset(is_train=False):
     annotations = pd.read_table(
         annFile, sep='\t', header=None, names=['image', 'caption'])
 
-    # 构建图像ID到描述的映射
     img_to_captions = {}
     for image, caption in zip(annotations['image'], annotations['caption']):
         image = image.split('#')[0]
@@ -166,16 +158,14 @@ class ImageCaptionDataset(Dataset):
 
     def collate_fn(self, batch):
         ids, categories, images, labels = tuple(
-            zip(*batch))  # batch接收的是dataset getitem方法返回值的列表
+            zip(*batch))
 
-        # 如果是二维数组则一个图像对应多个描述
         if isinstance(labels, tuple) and all(isinstance(sub_list, list) for sub_list in labels):
-            # 统计二维数组每个数组的长度，即batch中每个图像对应的描述数量
-            len_list = list(map(lambda x: len(x), labels))
-            # 将二维数组展平，让tokenizer处理batch个labels时,input_ids与attn_masks长度相同
+
+            len_list = [len(x) for x in labels]
+
             flat_labels = [item for sub_list in labels for item in sub_list]
 
-            # 一张图对应的n个描述
             output = self.processor(
                 text=flat_labels, images=images, return_tensors='pt', padding=True)
             output['len_list'] = len_list
