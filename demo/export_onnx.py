@@ -8,7 +8,11 @@ from config import config
 from transformers import AutoProcessor
 from transformers.models.clip import CLIPTextModelWithProjection
 
-# 预处理器
+from log_handler import Logger
+
+logger = Logger.get_logger()
+
+
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 processor = AutoProcessor.from_pretrained(config.onnx.checkpoint_dir)
 text_encoder_hf = CLIPTextModelWithProjection.from_pretrained(
@@ -16,14 +20,15 @@ text_encoder_hf = CLIPTextModelWithProjection.from_pretrained(
 ).to(device)
 model_name = config.onnx.checkpoint_dir.split('/')[-1]
 
-# bin转pt
+
 os.makedirs('./onnx', exist_ok=True)
 torch.save(text_encoder_hf, f'./onnx/{model_name}_text_encoder.pt')
 text_encoder_pt = torch.load(f'./onnx/{model_name}_text_encoder.pt')
 
-print("bin转pt完成")
 
-# pt转onnx
+logger.info(f'bin->pt completed')
+
+
 text = processor(
     text=['hello' for _ in range(32)],
     return_tensors='pt',
@@ -39,7 +44,7 @@ torch.onnx.export(
     input_names=['input_ids', 'attention_mask'],
     output_names=['text_embeds', 'last_hidden_state'],
     dynamic_axes={
-        # 不同长度的text得到的token长度是不一样的
+
         'input_ids': {0: 'batch_size', 1: 'input_ids_dim'},
         'attention_mask': {0: 'batch_size', 1: 'attention_mask_dim'},
         'text_embeds': {0: 'batch_size'},
@@ -47,12 +52,12 @@ torch.onnx.export(
     }
 )
 
-print("pt转onnx完成")
+logger.info(f'pt->onnx completed')
 
-# pytorch推理时间
+
 out = text_encoder_hf(**text)
 
-# onnx推理时间
+
 providers = 'CUDAExecutionProvider' if torch.cuda.is_available() else 'CPUExecutionProvider'
 session = onnxruntime.InferenceSession(
     f'./onnx/{model_name}_text_encoder.onnx', providers=[providers])

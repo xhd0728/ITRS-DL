@@ -1,13 +1,13 @@
 # Desc: 配置文件
-model_name = 'clip-vit-large-patch14'
+model_name = 'clip-vit-base-patch32'
 
 
 class MilvusConfig:
     def __init__(self):
         self.host = '127.0.0.1'
         self.port = '19530'
-        self.collection_name = 'large_patch14_train_coco2014'
-        self.vector_dim = 768
+        self.collection_name = 'vit_b_p32_coco2014_train'
+        self.vector_dim = 512
         self.topk = 10
 
         self.index_params = {
@@ -29,7 +29,7 @@ class MilvusConfig:
 
 class RedisConfig:
     def __init__(self):
-        self.use_redis = False
+        self.use_redis = True
         self.host = '127.0.0.1'
         self.port = 6379
         self.db = 0

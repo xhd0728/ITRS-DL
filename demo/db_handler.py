@@ -2,6 +2,9 @@ import pickle
 import redis
 from config import config
 from pymilvus import MilvusClient, connections, FieldSchema, CollectionSchema, DataType, Collection, utility
+from log_handler import Logger
+
+logger = Logger.get_logger()
 
 
 class MilvusHandler:
@@ -11,21 +14,22 @@ class MilvusHandler:
         port=config.milvus.port,
         collection_name=config.milvus.collection_name
     ):
-        # 连接向量数据库并加载到内存中
+
         self.collection_name = collection_name
         connections.connect(host=host, port=port)
-        # 连接对应的collection
+
         self._connect_collection(self.collection_name)
 
     def _connect_collection(self, collection_name):
-        if utility.has_collection(collection_name):  # 如果数据库存在则删除
+        if utility.has_collection(collection_name):
             self.collection = Collection(collection_name)
             self.collection.load()
         else:
-            print('milvus中没有' + collection_name + '对应的collection')
+            logger.info(
+                f'there is no collection corresponding to {collection_name} in milvus')
 
     def search(self, embeds, topk):
-        res = self.collection.search(  # TODO: 把milvus部分代码抽离成单个类
+        res = self.collection.search(
             data=embeds,
             anns_field='embedding',
             param=config.milvus.search_params,
@@ -47,11 +51,12 @@ class MilvusHandler:
         self.collection.flush()
 
     def get_num_entities(self):
-        print('已插入' + str(self.collection.num_entities) + '条数据')
+        logger.info(
+            f'{self.collection.num_entities} pieces of data have been inserted')
 
     @staticmethod
     def create_collection(collection_name, dim):
-        if utility.has_collection(collection_name):  # 如果数据库存在则删除
+        if utility.has_collection(collection_name):
             utility.drop_collection(collection_name)
 
         fields = [
@@ -67,22 +72,20 @@ class MilvusHandler:
             fields=fields, description='mini imagenet text image search')
         collection = Collection(name=collection_name, schema=schema)
 
-        # 在配置文件中填写索引参数
         index_params = config.milvus.index_params
 
-        # 根据字段建立索引
         collection.create_index(field_name="embedding",
                                 index_params=index_params)
         return collection
 
     @staticmethod
     def list_collections():
-        print(utility.list_collections())
+        logger.info(utility.list_collections())
 
     @staticmethod
     def drop_collection(collection_name):
         utility.drop_collection(collection_name)
-        print('已删除' + collection_name)
+        logger.info(f'deleted {collection_name}')
 
 
 class RedisHandler:
@@ -95,14 +98,14 @@ class RedisHandler:
         self.redis_client = redis.StrictRedis(host=host, port=port, db=db)
 
     def set(self, key, value, ex=config.redis.expire_time):
-        self.redis_client.set(key, value, ex)
+        serialized_value = pickle.dumps(value)
+        self.redis_client.set(key, serialized_value, ex)
 
-    def get(self, key):
+    def get_data(self, key):
         result = self.redis_client.get(key)
         if result:
             return pickle.loads(result)
-        else:
-            return None
+        return None
 
     def mget(self, keys):
         deserialize_res = []
@@ -115,40 +118,35 @@ class RedisHandler:
         return deserialize_res
 
     def update_data(self, key, new_value):
-        self.redis_client.set(key, new_value)
+        serialized_value = pickle.dumps(new_value)
+        self.redis_client.set(key, serialized_value)
 
     def delete_data(self, key):
         self.redis_client.delete(key)
 
 
 if __name__ == "__main__":
-    # 测试milvus和redis
+
     redis_handler = RedisHandler()
 
     key = "example_key"
     value = "example_value"
 
-    # 添加数据
     redis_handler.set(key, value)
-    print(f"添加数据：{key} -> {value}")
+    logger.info(f"adding data: {key} -> {value}")
 
-    # 获取数据
     result = redis_handler.get_data(key)
-    print(f"获取数据：{key} -> {result}")
+    logger.info(f"retrieve data: {key} -> {result}")
 
-    # 更新数据
     new_value = "updated_value"
     redis_handler.update_data(key, new_value)
-    print(f"更新数据：{key} -> {new_value}")
+    logger.info(f"update data: {key} -> {new_value}")
 
-    # 获取更新后的数据
     result = redis_handler.get_data(key)
-    print(f"获取数据：{key} -> {result}")
+    logger.info(f"retrieve data: {key} -> {result}")
 
-    # 删除数据
     redis_handler.delete_data(key)
-    print(f"删除数据：{key}")
+    logger.info(f"delete data: {key}")
 
-    # 再次获取数据（已删除）
     result = redis_handler.get_data(key)
-    print(f"获取数据：{key} -> {result}")
+    logger.info(f"retrieve data: {key} -> {result}")
