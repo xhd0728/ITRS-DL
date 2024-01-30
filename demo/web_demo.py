@@ -34,8 +34,8 @@ extraPairDict = {}
 
 def id2image(img_id: int) -> Image.Image:
 
-    root_dir = config.dataset.coco_path
-    val_data = pd.read_csv(os.path.join(root_dir, 'coco2014_train.csv'))
+    root_dir = config.dataset.flickr30k_path
+    val_data = pd.read_csv(os.path.join(root_dir, 'flickr30k.csv'))
 
     if img_id >= len(val_data['filename']):
         img_base64 = extraPairDict[str(img_id)]
@@ -43,7 +43,7 @@ def id2image(img_id: int) -> Image.Image:
             base64.b64decode(img_base64))).convert("RGB")
     else:
         img_path = os.path.join(
-            root_dir, 'train2014', val_data['filename'][img_id])
+            root_dir, 'flickr30k-images', val_data['filename'][img_id])
         img = Image.open(img_path)
     return img
 

@@ -91,7 +91,9 @@ if __name__ == '__main__':
                 image_embeds = image_output.image_embeds.squeeze().cpu().numpy()
 
                 text_output = text_encoder(
-                    input_ids=inputs['input_ids'], attention_mask=inputs['attention_mask'])
+                    input_ids=inputs['input_ids'][:, :77],
+                    attention_mask=inputs['attention_mask'][:, :77]
+                )
                 text_output.text_embeds /= text_output.text_embeds.norm(
                     dim=-1, keepdim=True)
                 text_embeds = text_output.text_embeds.squeeze().cpu().numpy()

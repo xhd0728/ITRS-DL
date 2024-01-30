@@ -1,18 +1,24 @@
-# Desc: 配置文件
-model_name = 'clip-vit-base-patch32'
+model_list = [
+    'clip-vit-base-patch16',
+    'clip-vit-base-patch32',
+    'clip-vit-large-patch14',
+    'chinese-clip-vit-base-patch16',
+]
+
+model_name = model_list[1]
 
 
 class MilvusConfig:
     def __init__(self):
         self.host = '127.0.0.1'
         self.port = '19530'
-        self.collection_name = 'vit_b_p32_coco2014_train'
+        self.collection_name = 'vit_b_p32_flickr30k'
         self.vector_dim = 512
         self.topk = 10
 
         self.index_params = {
-            'metric_type': 'IP',  # 内积距离
-            'index_type': 'HNSW',  # 算法类型
+            'metric_type': 'IP',
+            'index_type': 'HNSW',
             'params': {
                 'M': 8,
                 'efConstruction': 128
@@ -23,7 +29,7 @@ class MilvusConfig:
             "metric_type": 'IP',
             "params": {
                 "ef": 20
-            }  # topk < search_param的ef
+            }
         }
 
 
@@ -38,13 +44,13 @@ class RedisConfig:
 
 class GradioConfig:
     def __init__(self):
-        # 模型的保存路径
+
         self.checkpoint_dir = f'/mnt/f/DLWorks/model/{model_name}'
 
 
 class FinetuneConfig:
     def __init__(self):
-        # 模型的保存路径
+
         self.checkpoint_dir = f'/mnt/f/DLWorks/model/{model_name}'
         self.save_dir = './checkpoint'
 
@@ -52,28 +58,22 @@ class FinetuneConfig:
 class OnnxConfig:
     def __init__(self):
         self.use_onnx = True
-        # 模型的保存路径
+
         self.checkpoint_dir = f'/mnt/f/DLWorks/model/{model_name}'
         self.save_dir = './onnx'
 
 
 class DatasetConfig:
     def __init__(self):
-        # 数据集选择
-        # coco2014->coco
-        # coco2017->coco2017
-        # flickr30k->flickr30k
-        # mini imagenet->mini imagenet
-        self.name = 'coco'
 
-        # 数据集路径
+        self.name = 'flickr30k'
+
         self.mini_imagenet_path = '/mnt/f/DLWorks/dataset/mini-imagenet'
         self.flickr30k_path = '/mnt/f/DLWorks/dataset/flickr30k'
         self.coco_path = '/mnt/f/DLWorks/dataset/mscoco2014'
         self.coco2017_path = '/mnt/f/DLWorks/dataset/mscoco2017'
 
-        # 数据集划分
-        self.is_train = True
+        self.is_train = False
 
 
 class Config:

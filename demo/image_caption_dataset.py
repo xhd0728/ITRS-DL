@@ -121,7 +121,7 @@ def build_flickr30k_dataset(is_train=False):
 
     img_to_captions = {}
     for image, caption in zip(annotations['image'], annotations['caption']):
-        image = image.split('#')[0]
+        image = str(image).split('#')[0]
         if image not in img_to_captions:
             img_to_captions[image] = [caption]
         else:
