@@ -70,6 +70,7 @@ class DatasetConfig:
 
         self.mini_imagenet_path = '/mnt/f/DLWorks/dataset/mini-imagenet'
         self.flickr30k_path = '/mnt/f/DLWorks/dataset/flickr30k'
+        self.flickr30k_cn_path = '/mnt/f/DLWorks/dataset/flickr30k-cn'
         self.coco_path = '/mnt/f/DLWorks/dataset/mscoco2014'
         self.coco2017_path = '/mnt/f/DLWorks/dataset/mscoco2017'
 

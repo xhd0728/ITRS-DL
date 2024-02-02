@@ -22,12 +22,24 @@ def create_milvus_collection(collection_name, dim):
         utility.drop_collection(collection_name)
 
     fields = [
-        FieldSchema(name='id', dtype=DataType.INT64,
-                    descrition='ids', is_primary=True, auto_id=False),
-        FieldSchema(name='embedding', dtype=DataType.FLOAT_VECTOR,
-                    descrition='embedding vectors', dim=dim),
-        FieldSchema(name='category', dtype=DataType.INT64,
-                    descrition='category'),
+        FieldSchema(
+            name='id',
+            dtype=DataType.INT64,
+            descrition='ids',
+            is_primary=True,
+            auto_id=False
+        ),
+        FieldSchema(
+            name='embedding',
+            dtype=DataType.FLOAT_VECTOR,
+            descrition='embedding vectors',
+            dim=dim
+        ),
+        FieldSchema(
+            name='category',
+            dtype=DataType.INT64,
+            descrition='category'
+        ),
     ]
 
     schema = CollectionSchema(
@@ -48,10 +60,17 @@ if __name__ == '__main__':
     logger.info(f'device: {device}')
 
     image_encoder = CLIPVisionModelWithProjection.from_pretrained(
-        checkpoint_dir).to(device)
+        checkpoint_dir,
+        ignore_mismatched_sizes=True
+    ).to(device)
     text_encoder = CLIPTextModelWithProjection.from_pretrained(
-        checkpoint_dir).to(device)
-    model = CLIPModel.from_pretrained(checkpoint_dir).to(device)
+        checkpoint_dir,
+        ignore_mismatched_sizes=True
+    ).to(device)
+    model = CLIPModel.from_pretrained(
+        checkpoint_dir,
+        ignore_mismatched_sizes=True
+    ).to(device)
 
     processor = AutoProcessor.from_pretrained(checkpoint_dir)
 
@@ -70,7 +89,9 @@ if __name__ == '__main__':
 
     milvus_handler = MilvusHandler()
     milvus_handler.create_collection(
-        config.milvus.collection_name, config.milvus.vector_dim)
+        config.milvus.collection_name,
+        config.milvus.vector_dim
+    )
     milvus_handler._connect_collection(config.milvus.collection_name)
 
     model.eval()
@@ -85,9 +106,12 @@ if __name__ == '__main__':
                 inputs = inputs.to(device)
 
                 image_output = image_encoder(
-                    pixel_values=inputs['pixel_values'])
+                    pixel_values=inputs['pixel_values']
+                )
                 image_output.image_embeds /= image_output.image_embeds.norm(
-                    dim=-1, keepdim=True)
+                    dim=-1,
+                    keepdim=True
+                )
                 image_embeds = image_output.image_embeds.squeeze().cpu().numpy()
 
                 text_output = text_encoder(
@@ -95,7 +119,9 @@ if __name__ == '__main__':
                     attention_mask=inputs['attention_mask'][:, :77]
                 )
                 text_output.text_embeds /= text_output.text_embeds.norm(
-                    dim=-1, keepdim=True)
+                    dim=-1,
+                    keepdim=True
+                )
                 text_embeds = text_output.text_embeds.squeeze().cpu().numpy()
 
                 text_embeds_list = []
@@ -104,26 +130,38 @@ if __name__ == '__main__':
                         len_list[:i]):sum(len_list[:i]) + len_list[i]]
 
                     sub_text_embeds = np.mean(
-                        sub_text_embeds, axis=0, keepdims=True)
+                        sub_text_embeds,
+                        axis=0,
+                        keepdims=True
+                    )
                     text_embeds_list.append(sub_text_embeds)
 
                 mean_text_embeds = np.concatenate(text_embeds_list, axis=0)
 
                 insert_datas = [
-                    ids, (image_embeds + mean_text_embeds) / 2, categories]
+                    ids,
+                    (image_embeds + mean_text_embeds) / 2,
+                    categories
+                ]
                 mr = milvus_handler.insert(data=insert_datas)
                 continue
 
             output = model(**inputs)
 
             output.image_embeds /= output.image_embeds.norm(
-                dim=-1, keepdim=True)
+                dim=-1,
+                keepdim=True
+            )
             image_embeds = output.image_embeds.squeeze().cpu().numpy()
 
             output.text_embeds /= output.text_embeds.norm(dim=-1, keepdim=True)
             text_embeds = output.text_embeds.squeeze().cpu().numpy()
 
-            insert_datas = [ids, (image_embeds + text_embeds) / 2, categories]
+            insert_datas = [
+                ids,
+                (image_embeds + text_embeds) / 2,
+                categories
+            ]
 
             mr = milvus_handler.insert(data=insert_datas)
 

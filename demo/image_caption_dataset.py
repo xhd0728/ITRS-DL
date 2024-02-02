@@ -135,13 +135,39 @@ def build_flickr30k_dataset(is_train=False):
     return res
 
 
+def build_flickr30k_cn_dataset(is_train=False):
+    dataDir = config.dataset.flickr30k_cn_path
+    imageDir = config.dataset.flickr30k_path
+    annFile = os.path.join(dataDir, 'results_20240130.token')
+    img_folder = os.path.join(imageDir, 'flickr30k-images')
+    annotations = pd.read_table(
+        annFile, sep='#', header=None, names=['image', 'caption'])
+
+    img_to_captions = {}
+    for image, caption in zip(annotations['image'], annotations['caption']):
+        image = str(image) + '.jpg'
+        caption = caption[2:]
+        if image not in img_to_captions:
+            img_to_captions[image] = [caption]
+        else:
+            img_to_captions[image].append(caption)
+
+    res = []
+    for idx, (image, captions) in enumerate(img_to_captions.items()):
+        img_path = os.path.join(img_folder, image)
+        category = int(image.split('.')[0])
+        res.append((idx, category, img_path, captions))
+    return res
+
+
 class ImageCaptionDataset(Dataset):
     def __init__(self, is_train=False, return_loss=False, dataset='mini imagenet'):
         build_dataset_fn = {
             'mini imagenet': build_mini_imagenet_dataset,
             'coco': build_coco_dataset,
             'coco2017': build_coco2017_dataset,
-            'flickr30k': build_flickr30k_dataset
+            'flickr30k': build_flickr30k_dataset,
+            'flickr30k-cn': build_flickr30k_cn_dataset
         }
         self.data = build_dataset_fn[dataset](is_train=is_train)
         self.return_loss = return_loss

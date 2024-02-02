@@ -38,7 +38,7 @@ def flickr_process_token(token_path, image_folder, output_csv):
 
     for line in tqdm(lines):
 
-        filename = line.split('#')[0]
+        filename = line.split('#')[0] + '.jpg'
         image_path = os.path.join(image_folder, filename)
 
         if os.path.exists(image_path):
@@ -57,8 +57,8 @@ if __name__ == '__main__':
     #     'annotations/captions_train2014.json'
     # )
     token_path = os.path.join(
-        config.dataset.flickr30k_path,
-        'results_20130124.token'
+        config.dataset.flickr30k_cn_path,
+        'results_20240130.token'
     )
     # image_folder = os.path.join(
     #     config.dataset.coco_path,
@@ -73,8 +73,8 @@ if __name__ == '__main__':
     #     'coco2014_train.csv'
     # )
     output_csv = os.path.join(
-        config.dataset.flickr30k_path,
-        'flickr30k.csv'
+        config.dataset.flickr30k_cn_path,
+        'flickr30k-cn.csv'
     )
 
     # coco_process_json(json_path, image_folder, output_csv)
