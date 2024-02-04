@@ -5,14 +5,15 @@ model_list = [
     'chinese-clip-vit-base-patch16',
 ]
 
-model_name = model_list[1]
+model_name = model_list[3]
 
 
 class MilvusConfig:
     def __init__(self):
-        self.host = '127.0.0.1'
+        # self.host = '127.0.0.1'
+        self.host = '8.217.103.200'
         self.port = '19530'
-        self.collection_name = 'vit_b_p32_flickr30k'
+        self.collection_name = 'cn_vit_b_p16_flickr30k'
         self.vector_dim = 512
         self.topk = 10
 
@@ -35,7 +36,7 @@ class MilvusConfig:
 
 class RedisConfig:
     def __init__(self):
-        self.use_redis = True
+        self.use_redis = False
         self.host = '127.0.0.1'
         self.port = 6379
         self.db = 0
@@ -57,16 +58,25 @@ class FinetuneConfig:
 
 class OnnxConfig:
     def __init__(self):
-        self.use_onnx = True
+        self.use_onnx = False
 
         self.checkpoint_dir = f'/mnt/f/DLWorks/model/{model_name}'
         self.save_dir = './onnx'
 
 
+dataset_list = [
+    'mini-imagenet',
+    'flickr30k',
+    'flickr30k-cn',
+    'coco2014',
+    'coco2017',
+]
+
+
 class DatasetConfig:
     def __init__(self):
 
-        self.name = 'flickr30k'
+        self.name = dataset_list[2]
 
         self.mini_imagenet_path = '/mnt/f/DLWorks/dataset/mini-imagenet'
         self.flickr30k_path = '/mnt/f/DLWorks/dataset/flickr30k'

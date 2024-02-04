@@ -5,7 +5,7 @@ import onnxruntime
 import numpy as np
 from config import config
 from PIL import Image
-from transformers import AutoProcessor, CLIPTextModelWithProjection, CLIPVisionModelWithProjection
+from transformers import AutoProcessor, CLIPTextModelWithProjection, CLIPVisionModelWithProjection, ChineseCLIPModel, ChineseCLIPProcessor
 
 
 class OnnxTextModel:
@@ -33,20 +33,38 @@ class HfTextModel:
         self.device = torch.device(
             'cuda' if torch.cuda.is_available() else 'cpu')
         self.model, self.processor = self._load_model_and_processor(model_name)
-        self._warmup()
+        self._warmup(model_name)
 
     def _load_model_and_processor(self, model_name):
-        model = CLIPTextModelWithProjection.from_pretrained(
-            model_name).to(self.device)
-        processor = AutoProcessor.from_pretrained(model_name)
+        if 'chinese' in model_name:
+            model = ChineseCLIPModel.from_pretrained(
+                model_name,
+                ignore_mismatched_sizes=True
+            ).to(self.device)
+            processor = ChineseCLIPProcessor.from_pretrained(
+                model_name,
+                ignore_mismatched_sizes=True
+            )
+        else:
+            model = CLIPTextModelWithProjection.from_pretrained(
+                model_name,
+                ignore_mismatched_sizes=True
+            ).to(self.device)
+            processor = AutoProcessor.from_pretrained(model_name)
         return model, processor
 
-    def _warmup(self):
+    def _warmup(self, model_name):
         input = self.processor(
-            text='warmup text', return_tensors='pt', padding=True).to(self.device)
+            text='warmup text',
+            return_tensors='pt',
+            padding=True
+        ).to(self.device)
         self.model.eval()
         with torch.no_grad():
-            self.model(**input)
+            if 'chinese' in model_name:
+                self.model.get_text_features(**input)
+            else:
+                self.model(**input)
 
     @classmethod
     def _empty_cache(self):
@@ -59,13 +77,19 @@ class HfTextModel:
 
     def __call__(self, text):
         text_token = self.processor(
-            text=text, return_tensors='pt', padding=True).to(self.device)
+            text=text,
+            return_tensors='pt',
+            padding=True
+        ).to(self.device)
         self.model.eval()
         with torch.no_grad():
-            output = self.model(**text_token)
+            text_features = self.model.get_text_features(**text_token)
 
-        output.text_embeds /= output.text_embeds.norm(dim=-1, keepdim=True)
-        text_embeds = output.text_embeds.cpu().numpy()
+        text_features /= text_features.norm(
+            dim=-1,
+            keepdim=True
+        )
+        text_embeds = text_features.cpu().numpy()
         return text_embeds
 
 
@@ -74,26 +98,39 @@ class HfVisionModel:
         self.device = torch.device(
             'cuda' if torch.cuda.is_available() else 'cpu')
         self.model, self.processor = self._load_model_and_processor(model_name)
-        self._warmup()
+        self._warmup(model_name)
 
     def _load_model_and_processor(self, model_name):
-        model = CLIPVisionModelWithProjection.from_pretrained(
-            model_name).to(self.device)
-        processor = AutoProcessor.from_pretrained(model_name)
+        if 'chinese' in model_name:
+            model = ChineseCLIPModel.from_pretrained(
+                model_name,
+                ignore_mismatched_sizes=True
+            ).to(self.device)
+            processor = ChineseCLIPProcessor.from_pretrained(
+                model_name,
+                ignore_mismatched_sizes=True
+            )
+        else:
+            model = CLIPVisionModelWithProjection.from_pretrained(
+                model_name,
+                ignore_mismatched_sizes=True
+            ).to(self.device)
+            processor = AutoProcessor.from_pretrained(model_name)
         return model, processor
 
-    # def _warmup(self):
-    #     input = self.processor(images=Image.open(
-    #         './assets/heu.jpg'), return_tensors='pt', padding=True).to(self.device)
-    #     self.model.eval()
-    #     with torch.no_grad():
-    #         self.model(**input)
-
-    def _warmup(self):
-        input = torch.randn(1, 3, 224, 224).to(self.device)
+    def _warmup(self, model_name):
+        # input = torch.randn(1, 3, 224, 224).to(self.device)
+        input = self.processor(
+            images=Image.new("RGB", (30, 30), (255, 255, 255)),
+            return_tensors='pt',
+            padding=True
+        ).to(self.device)
         self.model.eval()
         with torch.no_grad():
-            self.model(input)
+            if 'chinese' in model_name:
+                self.model.get_image_features(**input)
+            else:
+                self.model(input)
 
     @classmethod
     def _empty_cache(self):
@@ -109,8 +146,11 @@ class HfVisionModel:
             images=images, return_tensors='pt', padding=True).to(self.device)
         self.model.eval()
         with torch.no_grad():
-            output = self.model(**image_token)
+            image_features = self.model.get_image_features(**image_token)
 
-        output.image_embeds /= output.image_embeds.norm(dim=-1, keepdim=True)
-        image_embeds = output.image_embeds.cpu().numpy()
+        image_features /= image_features.norm(
+            dim=-1,
+            keepdim=True
+        )
+        image_embeds = image_features.cpu().numpy()
         return image_embeds

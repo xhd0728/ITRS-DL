@@ -35,7 +35,8 @@ extraPairDict = {}
 def id2image(img_id: int) -> Image.Image:
 
     root_dir = config.dataset.flickr30k_path
-    val_data = pd.read_csv(os.path.join(root_dir, 'flickr30k.csv'))
+    csv_dir = config.dataset.flickr30k_cn_path
+    val_data = pd.read_csv(os.path.join(csv_dir, 'flickr30k-cn.csv'))
 
     if img_id >= len(val_data['filename']):
         img_base64 = extraPairDict[str(img_id)]

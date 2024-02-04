@@ -13,7 +13,8 @@ def get_labels_and_cates(dataset, is_train):
         'mini imagenet': build_mini_imagenet_dataset,
         'coco': build_coco_dataset,
         'coco2017': build_coco2017_dataset,
-        'flickr30k': build_flickr30k_dataset
+        'flickr30k': build_flickr30k_dataset,
+        'flickr30k-cn': build_flickr30k_cn_dataset
     }
     array = build_dataset_fn[dataset](is_train=is_train)
     array = sorted(array, key=lambda x: int(x[1]))
@@ -136,12 +137,17 @@ def build_flickr30k_dataset(is_train=False):
 
 
 def build_flickr30k_cn_dataset(is_train=False):
+
     dataDir = config.dataset.flickr30k_cn_path
     imageDir = config.dataset.flickr30k_path
     annFile = os.path.join(dataDir, 'results_20240130.token')
     img_folder = os.path.join(imageDir, 'flickr30k-images')
     annotations = pd.read_table(
-        annFile, sep='#', header=None, names=['image', 'caption'])
+        annFile,
+        sep='#',
+        header=None,
+        names=['image', 'caption'],
+    )
 
     img_to_captions = {}
     for image, caption in zip(annotations['image'], annotations['caption']):
