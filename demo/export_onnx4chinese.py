@@ -4,8 +4,7 @@ import torch
 import numpy as np
 
 from config import config
-from transformers import AutoProcessor, ChineseCLIPProcessor
-from transformers.models.clip import CLIPTextModelWithProjection
+from transformers import ChineseCLIPProcessor, ChineseCLIPTextModel
 
 from log_handler import Logger
 
@@ -14,7 +13,7 @@ logger = Logger.get_logger()
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 processor = ChineseCLIPProcessor.from_pretrained(config.onnx.checkpoint_dir)
-text_encoder_hf = CLIPTextModelWithProjection.from_pretrained(
+text_encoder_hf = ChineseCLIPTextModel.from_pretrained(
     config.onnx.checkpoint_dir,
     ignore_mismatched_sizes=True
 ).to(device)
@@ -41,10 +40,9 @@ torch.onnx.export(
     args=text,
     f=f'./onnx/{model_name}_text_encoder.onnx',
     opset_version=14,
-    input_names=['input_ids', 'attention_mask'],
+    input_names=['input_ids', 'attention_mask', 'token_type_ids'],
     output_names=['text_embeds', 'last_hidden_state'],
     dynamic_axes={
-
         'input_ids': {0: 'batch_size', 1: 'input_ids_dim'},
         'attention_mask': {0: 'batch_size', 1: 'attention_mask_dim'},
         'text_embeds': {0: 'batch_size'},
