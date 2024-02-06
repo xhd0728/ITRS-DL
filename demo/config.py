@@ -3,9 +3,10 @@ model_list = [
     'clip-vit-base-patch32',
     'clip-vit-large-patch14',
     'chinese-clip-vit-base-patch16',
+    'chinese-clip-vit-large-patch14-336px'
 ]
 
-model_name = model_list[3]
+model_name = model_list[4]
 
 
 class MilvusConfig:
@@ -13,8 +14,8 @@ class MilvusConfig:
         # self.host = '127.0.0.1'
         self.host = '8.217.103.200'
         self.port = '19530'
-        self.collection_name = 'cn_vit_b_p16_flickr30k'
-        self.vector_dim = 512
+        self.collection_name = 'cn_vit_l_p14_flickr30k'
+        self.vector_dim = 768
         self.topk = 10
 
         self.index_params = {
@@ -36,7 +37,7 @@ class MilvusConfig:
 
 class RedisConfig:
     def __init__(self):
-        self.use_redis = False
+        self.use_redis = True
         self.host = '127.0.0.1'
         self.port = 6379
         self.db = 0

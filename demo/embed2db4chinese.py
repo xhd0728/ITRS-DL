@@ -83,7 +83,7 @@ if __name__ == '__main__':
 
     dataloader = DataLoader(
         dataset,
-        batch_size=128,
+        batch_size=64,
         num_workers=0,  # iter-style dataset set 0
         shuffle=False,
         pin_memory=False,
